@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -66,10 +67,15 @@ fun CalculatorScreen(
     val equalsButtonColor = Color(0xFF50C878)
     val textColor = Color.White
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(backgroundColor)
+    ) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .safeDrawingPadding()
             .padding(12.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
@@ -221,6 +227,7 @@ fun CalculatorScreen(
             }
         }
     }
+    } // close Box
 }
 
 
