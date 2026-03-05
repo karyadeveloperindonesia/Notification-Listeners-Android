@@ -7,12 +7,16 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,13 +30,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import com.putra.notificationlisteners.R
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.putra.notificationlisteners.viewmodel.CalculatorViewModel
+
+private val sfProRounded = FontFamily(Font(R.font.sf_pro_rounded_semibold))
 
 @Composable
 fun CalculatorScreen(
@@ -64,17 +73,18 @@ fun CalculatorScreen(
             .padding(12.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Display Area — top 45% of screen
+        // Display Area — top 40% of screen
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(0.45f),
+                .weight(0.40f),
             contentAlignment = Alignment.BottomEnd
         ) {
             Text(
                 text = display,
                 fontSize = 72.sp,
-                fontWeight = FontWeight.Light,
+                fontFamily = sfProRounded,
+                fontWeight = FontWeight.Normal,
                 color = textColor,
                 textAlign = TextAlign.End,
                 maxLines = 1,
@@ -84,126 +94,130 @@ fun CalculatorScreen(
             )
         }
 
-        // Button Grid — bottom 55% of screen
-        Column(
+        // Button Grid — bottom 60% of screen
+        // Use BoxWithConstraints to derive exact button size from available width
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(0.55f),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .weight(0.60f)
         ) {
-            val rowModifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
+            val spacing = 8.dp
+            val buttonSize = (maxWidth - spacing * 3) / 4
 
-            // Row 1: C, +/-, %, ÷
-            Row(
-                modifier = rowModifier,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(spacing, Alignment.CenterVertically)
             ) {
-                listOf(
-                    Triple("C", numberButtonColor, { viewModel.onClear() }),
-                    Triple("+/-", numberButtonColor, {}),
-                    Triple("%", numberButtonColor, {}),
-                    Triple("÷", operatorButtonColor, { viewModel.onOperator("÷") })
-                ).forEach { (label, color, action) ->
-                    CalculatorButtonComponent(
-                        label = label,
-                        backgroundColor = color,
-                        textColor = textColor,
-                        modifier = Modifier.weight(1f).fillMaxSize(),
-                        onClick = action
-                    )
+                // Row 1: C, +/-, %, ÷
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(spacing)
+                ) {
+                    listOf(
+                        Triple("C", numberButtonColor, { viewModel.onClear() }),
+                        Triple("+/-", numberButtonColor, {}),
+                        Triple("%", numberButtonColor, {}),
+                        Triple("÷", operatorButtonColor, { viewModel.onOperator("÷") })
+                    ).forEach { (label, color, action) ->
+                        CalculatorButtonComponent(
+                            label = label,
+                            backgroundColor = color,
+                            textColor = textColor,
+                            modifier = Modifier.size(buttonSize),
+                            onClick = action
+                        )
+                    }
                 }
-            }
 
-            // Row 2: 7, 8, 9, ×
-            Row(
-                modifier = rowModifier,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                listOf(
-                    Triple("7", numberButtonColor, { viewModel.onNumberClick("7") }),
-                    Triple("8", numberButtonColor, { viewModel.onNumberClick("8") }),
-                    Triple("9", numberButtonColor, { viewModel.onNumberClick("9") }),
-                    Triple("×", operatorButtonColor, { viewModel.onOperator("×") })
-                ).forEach { (label, color, action) ->
-                    CalculatorButtonComponent(
-                        label = label,
-                        backgroundColor = color,
-                        textColor = textColor,
-                        modifier = Modifier.weight(1f).fillMaxSize(),
-                        onClick = action
-                    )
+                // Row 2: 7, 8, 9, ×
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(spacing)
+                ) {
+                    listOf(
+                        Triple("7", numberButtonColor, { viewModel.onNumberClick("7") }),
+                        Triple("8", numberButtonColor, { viewModel.onNumberClick("8") }),
+                        Triple("9", numberButtonColor, { viewModel.onNumberClick("9") }),
+                        Triple("×", operatorButtonColor, { viewModel.onOperator("×") })
+                    ).forEach { (label, color, action) ->
+                        CalculatorButtonComponent(
+                            label = label,
+                            backgroundColor = color,
+                            textColor = textColor,
+                            modifier = Modifier.size(buttonSize),
+                            onClick = action
+                        )
+                    }
                 }
-            }
 
-            // Row 3: 4, 5, 6, -
-            Row(
-                modifier = rowModifier,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                listOf(
-                    Triple("4", numberButtonColor, { viewModel.onNumberClick("4") }),
-                    Triple("5", numberButtonColor, { viewModel.onNumberClick("5") }),
-                    Triple("6", numberButtonColor, { viewModel.onNumberClick("6") }),
-                    Triple("-", operatorButtonColor, { viewModel.onOperator("-") })
-                ).forEach { (label, color, action) ->
-                    CalculatorButtonComponent(
-                        label = label,
-                        backgroundColor = color,
-                        textColor = textColor,
-                        modifier = Modifier.weight(1f).fillMaxSize(),
-                        onClick = action
-                    )
+                // Row 3: 4, 5, 6, -
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(spacing)
+                ) {
+                    listOf(
+                        Triple("4", numberButtonColor, { viewModel.onNumberClick("4") }),
+                        Triple("5", numberButtonColor, { viewModel.onNumberClick("5") }),
+                        Triple("6", numberButtonColor, { viewModel.onNumberClick("6") }),
+                        Triple("-", operatorButtonColor, { viewModel.onOperator("-") })
+                    ).forEach { (label, color, action) ->
+                        CalculatorButtonComponent(
+                            label = label,
+                            backgroundColor = color,
+                            textColor = textColor,
+                            modifier = Modifier.size(buttonSize),
+                            onClick = action
+                        )
+                    }
                 }
-            }
 
-            // Row 4: 1, 2, 3, +
-            Row(
-                modifier = rowModifier,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                listOf(
-                    Triple("1", numberButtonColor, { viewModel.onNumberClick("1") }),
-                    Triple("2", numberButtonColor, { viewModel.onNumberClick("2") }),
-                    Triple("3", numberButtonColor, { viewModel.onNumberClick("3") }),
-                    Triple("+", operatorButtonColor, { viewModel.onOperator("+") })
-                ).forEach { (label, color, action) ->
-                    CalculatorButtonComponent(
-                        label = label,
-                        backgroundColor = color,
-                        textColor = textColor,
-                        modifier = Modifier.weight(1f).fillMaxSize(),
-                        onClick = action
-                    )
+                // Row 4: 1, 2, 3, +
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(spacing)
+                ) {
+                    listOf(
+                        Triple("1", numberButtonColor, { viewModel.onNumberClick("1") }),
+                        Triple("2", numberButtonColor, { viewModel.onNumberClick("2") }),
+                        Triple("3", numberButtonColor, { viewModel.onNumberClick("3") }),
+                        Triple("+", operatorButtonColor, { viewModel.onOperator("+") })
+                    ).forEach { (label, color, action) ->
+                        CalculatorButtonComponent(
+                            label = label,
+                            backgroundColor = color,
+                            textColor = textColor,
+                            modifier = Modifier.size(buttonSize),
+                            onClick = action
+                        )
+                    }
                 }
-            }
 
-            // Row 5: 0 (wide), ., =
-            Row(
-                modifier = rowModifier,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                CalculatorButtonComponent(
-                    label = "0",
-                    backgroundColor = numberButtonColor,
-                    textColor = textColor,
-                    modifier = Modifier.weight(2f).fillMaxSize()
-                ) { viewModel.onNumberClick("0") }
+                // Row 5: 0 (wide pill), ., =
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(spacing)
+                ) {
+                    CalculatorButtonComponent(
+                        label = "0",
+                        backgroundColor = numberButtonColor,
+                        textColor = textColor,
+                        modifier = Modifier.size(width = buttonSize * 2 + spacing, height = buttonSize)
+                    ) { viewModel.onNumberClick("0") }
 
-                CalculatorButtonComponent(
-                    label = ".",
-                    backgroundColor = numberButtonColor,
-                    textColor = textColor,
-                    modifier = Modifier.weight(1f).fillMaxSize()
-                ) { viewModel.onDecimal() }
+                    CalculatorButtonComponent(
+                        label = ".",
+                        backgroundColor = numberButtonColor,
+                        textColor = textColor,
+                        modifier = Modifier.size(buttonSize)
+                    ) { viewModel.onDecimal() }
 
-                CalculatorButtonComponent(
-                    label = "=",
-                    backgroundColor = equalsButtonColor,
-                    textColor = textColor,
-                    modifier = Modifier.weight(1f).fillMaxSize()
-                ) { viewModel.onEquals() }
+                    CalculatorButtonComponent(
+                        label = "=",
+                        backgroundColor = equalsButtonColor,
+                        textColor = textColor,
+                        modifier = Modifier.size(buttonSize)
+                    ) { viewModel.onEquals() }
+                }
             }
         }
     }
@@ -256,8 +270,9 @@ private fun CalculatorButtonComponent(
     ) {
         Text(
             text = label,
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Bold,
+            fontSize = 31.sp,
+            fontFamily = sfProRounded,
+            fontWeight = FontWeight.Normal,
             color = textColor,
             modifier = Modifier.graphicsLayer(
                 scaleX = scale,
