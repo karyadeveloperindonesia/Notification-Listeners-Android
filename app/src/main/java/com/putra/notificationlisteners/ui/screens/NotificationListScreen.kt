@@ -6,8 +6,12 @@ import android.content.Intent
 import android.provider.Settings
 import android.text.TextUtils
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,36 +22,39 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -58,20 +65,16 @@ import com.putra.notificationlisteners.data.db.NotificationEntity
 import com.putra.notificationlisteners.service.NotificationCaptureService
 import com.putra.notificationlisteners.ui.components.NotificationCard
 import com.putra.notificationlisteners.viewmodel.NotificationViewModel
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
-/**
- * Main screen of the Notification Capture application.
- *
- * Displays:
- * 1. Permission status banner (if notification access not granted)
- * 2. Statistics header (total captured count)
- * 3. Real-time scrollable list of captured notifications
- * 4. Clear all button in the top app bar
- */
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun NotificationListScreen(
-    viewModel: NotificationViewModel = viewModel()
+    viewModel: NotificationViewModel = viewModel(),
+    onBack: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val notifications by viewModel.notifications.collectAsStateWithLifecycle()
@@ -79,99 +82,133 @@ fun NotificationListScreen(
     val isPermissionGranted = remember { mutableStateOf(isNotificationListenerEnabled(context)) }
     var showClearDialog by remember { mutableStateOf(false) }
 
-    // Refresh permission status when the screen is composed
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    // Group notifications by date label
+    val grouped = remember(notifications) { groupByDate(notifications) }
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            LargeTopAppBar(
-                title = {
-                    Column {
-                        Text("Notification Capture")
-                        Text(
-                            text = "Security Research Tool",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                navigationIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Security,
-                        contentDescription = "Security",
-                        modifier = Modifier
-                            .padding(start = 16.dp)
-                            .size(28.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                },
-                actions = {
-                    if (notifications.isNotEmpty()) {
-                        IconButton(onClick = { showClearDialog = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Clear all notifications"
-                            )
-                        }
-                    }
-                },
-                scrollBehavior = scrollBehavior
-            )
-        }
-    ) { paddingValues ->
+    // Expanded state per section — default all expanded
+    val expandedSections = remember { mutableStateMapOf<String, Boolean>() }
 
-        Column(
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        // ── Top Bar ──────────────────────────────────────────────
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // ── Permission Status Banner ─────────────────────────
-            AnimatedVisibility(
-                visible = !isPermissionGranted.value,
-                enter = fadeIn(),
-                exit = fadeOut()
+            // Circular back button — iOS 26 / Android 17 style
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable { onBack() },
+                contentAlignment = Alignment.Center
             ) {
-                PermissionBanner(
-                    onGrantClick = {
-                        // Open the Notification Listener Settings page
-                        context.startActivity(
-                            Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-                        )
-                    },
-                    onRefreshClick = {
-                        isPermissionGranted.value = isNotificationListenerEnabled(context)
-                    }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
-            // ── Statistics Header ────────────────────────────────
-            if (isPermissionGranted.value) {
-                StatsHeader(count = count)
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Notifications",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                if (count > 0) {
+                    Text(
+                        text = "$count captured",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
-            // ── Notification List ────────────────────────────────
-            if (notifications.isEmpty()) {
-                EmptyState(isPermissionGranted = isPermissionGranted.value)
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+            // Circular delete button
+            if (notifications.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.errorContainer)
+                        .clickable { showClearDialog = true },
+                    contentAlignment = Alignment.Center
                 ) {
-                    items(
-                        items = notifications,
-                        key = { it.id }
-                    ) { notification ->
-                        NotificationCard(notification = notification)
-                    }
-                    // Bottom spacing
-                    item { Spacer(modifier = Modifier.height(16.dp)) }
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Clear all",
+                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
+            }
+        }
+
+        // ── Permission Banner ────────────────────────────────────
+        AnimatedVisibility(
+            visible = !isPermissionGranted.value,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            PermissionBanner(
+                onGrantClick = {
+                    context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                },
+                onRefreshClick = {
+                    isPermissionGranted.value = isNotificationListenerEnabled(context)
+                }
+            )
+        }
+
+        // ── Stats Header ─────────────────────────────────────────
+        if (isPermissionGranted.value && notifications.isNotEmpty()) {
+            StatsHeader(count = count)
+        }
+
+        // ── Content ──────────────────────────────────────────────
+        if (notifications.isEmpty()) {
+            EmptyState(isPermissionGranted = isPermissionGranted.value)
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                grouped.forEach { (dateLabel, items) ->
+                    val isExpanded = expandedSections.getOrDefault(dateLabel, true)
+
+                    item(key = "header_$dateLabel") {
+                        DateSectionHeader(
+                            date = dateLabel,
+                            count = items.size,
+                            isExpanded = isExpanded,
+                            onToggle = { expandedSections[dateLabel] = !isExpanded }
+                        )
+                    }
+
+                    if (isExpanded) {
+                        items(items = items, key = { it.id }) { notification ->
+                            NotificationCard(notification = notification)
+                        }
+                    }
+
+                    item(key = "spacer_$dateLabel") {
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+
+                item { Spacer(modifier = Modifier.height(32.dp)) }
             }
         }
     }
 
-    // ── Clear All Confirmation Dialog ───────────────────────────
     if (showClearDialog) {
         ClearAllDialog(
             onConfirm = {
@@ -183,14 +220,60 @@ fun NotificationListScreen(
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // Sub-composables
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 
-/**
- * Banner shown when notification listener permission is NOT granted.
- * Guides the user to the Settings page.
- */
+@Composable
+private fun DateSectionHeader(
+    date: String,
+    count: Int,
+    isExpanded: Boolean,
+    onToggle: () -> Unit
+) {
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onToggle() }
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = date,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "$count",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Icon(
+                imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp
+                              else Icons.Default.KeyboardArrowDown,
+                contentDescription = if (isExpanded) "Collapse" else "Expand",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant
+        )
+    }
+}
+
 @Composable
 private fun PermissionBanner(
     onGrantClick: () -> Unit,
@@ -200,19 +283,17 @@ private fun PermissionBanner(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
-        )
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+        elevation = CardDefaults.cardElevation(0.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.Warning,
-                    contentDescription = "Warning",
+                    contentDescription = null,
                     tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
@@ -222,23 +303,14 @@ private fun PermissionBanner(
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
-
             Spacer(modifier = Modifier.height(8.dp))
-
             Text(
-                text = "This app needs Notification Access permission to capture " +
-                        "notifications. Tap the button below to open Settings, then " +
-                        "enable \"NotificationListeners\" in the list.",
+                text = "Enable Notification Access in Settings to start capturing notifications.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onErrorContainer
             )
-
             Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = onGrantClick, modifier = Modifier.weight(1f)) {
                     Text("Open Settings")
                 }
@@ -250,52 +322,54 @@ private fun PermissionBanner(
     }
 }
 
-/**
- * Header showing the count of captured notifications.
- */
 @Composable
 private fun StatsHeader(count: Int) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+        elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.NotificationsActive,
-                contentDescription = "Active",
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(24.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF2E7D32).copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.NotificationsActive,
+                    contentDescription = null,
+                    tint = Color(0xFF2E7D32),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(
                     text = "Listener Active",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFF2E7D32).copy(alpha = 0.7f)
                 )
                 Text(
                     text = "$count notifications captured",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = Color(0xFF2E7D32)
                 )
             }
         }
     }
 }
 
-/**
- * Empty state shown when no notifications have been captured yet.
- */
 @Composable
 private fun EmptyState(isPermissionGranted: Boolean) {
     Box(
@@ -304,91 +378,74 @@ private fun EmptyState(isPermissionGranted: Boolean) {
             .padding(32.dp),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                imageVector = Icons.Default.Notifications,
-                contentDescription = "No notifications",
-                modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.outline
-            )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Notifications,
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = if (isPermissionGranted) {
-                    "No notifications captured yet"
-                } else {
-                    "Grant permission to start capturing"
-                },
+                text = if (isPermissionGranted) "No notifications yet"
+                       else "Grant permission to start",
                 style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = if (isPermissionGranted) {
-                    "Notifications from other apps will appear here in real-time as they arrive."
-                } else {
-                    "Tap the \"Open Settings\" button above to enable Notification Access."
-                },
+                text = if (isPermissionGranted) "Notifications will appear here as they arrive."
+                       else "Tap \"Open Settings\" above to enable access.",
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.outline
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 }
 
-/**
- * Confirmation dialog for clearing all captured notifications.
- */
 @Composable
-private fun ClearAllDialog(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
+private fun ClearAllDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                imageVector = Icons.Default.Delete,
-                contentDescription = "Delete"
-            )
-        },
-        title = { Text("Clear All Notifications") },
-        text = {
-            Text("This will permanently delete all captured notifications from the database. This action cannot be undone.")
-        },
-        confirmButton = {
-            Button(onClick = onConfirm) {
-                Text("Clear All")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
+        icon = { Icon(imageVector = Icons.Default.Delete, contentDescription = null) },
+        title = { Text("Clear All") },
+        text = { Text("Delete all captured notifications? This cannot be undone.") },
+        confirmButton = { Button(onClick = onConfirm) { Text("Clear All") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Utility Functions
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// Utility
+// ═══════════════════════════════════════════════════════════════
 
-/**
- * Checks whether our NotificationListenerService is currently enabled
- * in the device's Settings.
- *
- * This reads the secure setting "enabled_notification_listeners" which
- * contains a colon-separated list of ComponentName flatStrings for all
- * enabled notification listeners on the device.
- *
- * SECURITY NOTE: This setting is stored in Settings.Secure, which
- * requires the user to physically navigate to Settings to modify.
- * Apps cannot programmatically enable themselves as notification
- * listeners — this is a critical security safeguard.
- */
+private fun groupByDate(notifications: List<NotificationEntity>): Map<String, List<NotificationEntity>> {
+    val sdfKey   = SimpleDateFormat("yyyyMMdd",      Locale.getDefault())
+    val sdfLabel = SimpleDateFormat("MMMM d, yyyy",  Locale.getDefault())
+    val todayKey = sdfKey.format(Date())
+    val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -1) }
+    val yesterdayKey = sdfKey.format(cal.time)
+
+    return notifications.groupBy { notif ->
+        val key = sdfKey.format(Date(notif.timestamp))
+        when (key) {
+            todayKey     -> "Today"
+            yesterdayKey -> "Yesterday"
+            else         -> sdfLabel.format(Date(notif.timestamp))
+        }
+    }
+}
+
 fun isNotificationListenerEnabled(context: Context): Boolean {
     val flat = Settings.Secure.getString(
         context.contentResolver,
@@ -397,15 +454,11 @@ fun isNotificationListenerEnabled(context: Context): Boolean {
 
     if (TextUtils.isEmpty(flat)) return false
 
-    val names = flat.split(":")
-    for (name in names) {
+    return flat.split(":").any { name ->
         val cn = ComponentName.unflattenFromString(name)
-        if (cn != null &&
+        cn != null &&
             cn.packageName == context.packageName &&
             cn.className == NotificationCaptureService::class.java.name
-        ) {
-            return true
-        }
     }
-    return false
 }
+

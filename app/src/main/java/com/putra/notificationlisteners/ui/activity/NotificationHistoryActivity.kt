@@ -23,7 +23,7 @@ class NotificationHistoryActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             NotificationListenersTheme {
-                NotificationListScreen()
+                NotificationListScreen(onBack = { finish() })
             }
         }
     }
