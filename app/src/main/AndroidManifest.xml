@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+        PERMISSION DECLARATION
+        ━━━━━━━━━━━━━━━━━━━━━
+        BIND_NOTIFICATION_LISTENER_SERVICE is a system-level permission that
+        only the Android OS can grant. It cannot be requested at runtime via
+        the standard permission dialog. Instead, the user must manually
+        navigate to Settings → Notification Access and toggle this app ON.
+
+        This design is intentional by Google to prevent apps from silently
+        gaining notification access — the user must take deliberate action.
+    -->
+
+    <application
+        android:name=".NotificationApp"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.NotificationListeners">
+
+        <!-- Main Activity -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.NotificationListeners">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            NOTIFICATION LISTENER SERVICE DECLARATION
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            This service is the core of the notification capture mechanism.
+
+            Key attributes:
+            • android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+              Ensures only the Android system can bind to this service.
+              Other apps cannot interact with it directly.
+
+            • android:exported="false"
+              The service is not accessible to other applications.
+
+            • The intent-filter action tells the system this is a
+              NotificationListenerService implementation, causing it
+              to appear in Settings → Notification Access.
+        -->
+        <service
+            android:name=".service.NotificationCaptureService"
+            android:exported="false"
+            android:label="Notification Capture Service"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+    </application>
+
+</manifest>
