@@ -123,6 +123,22 @@ class CalculatorViewModel : ViewModel() {
     /**
      * Toggle sign of current input (positive ↔ negative).
      */
+    /**
+     * Convert current input to percentage (divide by 100).
+     * If an operation is pending, calculates percentage of previousValue.
+     * e.g. 200 + 50% → 200 + 100 (50% of 200)
+     */
+    fun onPercent() {
+        val value = currentInput.toDoubleOrNull() ?: return
+        val result = if (operation != null) {
+            previousValue * (value / 100.0)
+        } else {
+            value / 100.0
+        }
+        currentInput = formatNumber(result)
+        updateDisplay(currentInput)
+    }
+
     fun onToggleSign() {
         if (lastWasEqual) {
             // Negate the result currently on display
