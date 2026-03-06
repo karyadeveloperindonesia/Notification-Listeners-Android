@@ -32,6 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Notifications
@@ -65,6 +66,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.putra.notificationlisteners.data.db.NotificationEntity
 import com.putra.notificationlisteners.service.NotificationCaptureService
+import com.putra.notificationlisteners.ui.activity.DeveloperInfoActivity
 import com.putra.notificationlisteners.ui.components.NotificationCard
 import com.putra.notificationlisteners.viewmodel.NotificationViewModel
 import java.text.SimpleDateFormat
@@ -157,6 +159,26 @@ fun NotificationListScreen(
                         modifier = Modifier.size(20.dp)
                     )
                 }
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
+            // Developer info button
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable {
+                        context.startActivity(Intent(context, DeveloperInfoActivity::class.java))
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = "Developer Info",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
 

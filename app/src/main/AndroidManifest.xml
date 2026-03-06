@@ -44,6 +44,13 @@
             android:label="Notification History"
             android:theme="@style/Theme.NotificationListeners" />
 
+        <!-- Developer Information Page -->
+        <activity
+            android:name=".ui.activity.DeveloperInfoActivity"
+            android:exported="false"
+            android:label="Developer Info"
+            android:theme="@style/Theme.NotificationListeners" />
+
         <!--
             NOTIFICATION LISTENER SERVICE DECLARATION
             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
