@@ -87,6 +87,11 @@ class NotificationCaptureService : NotificationListenerService() {
         AppDatabase.getInstance(applicationContext).notificationDao()
     }
 
+    /** Repository for cleanup operations. */
+    private val repository by lazy {
+        com.putra.notificationlisteners.data.repository.NotificationRepository(dao)
+    }
+
     /**
      * Called when the listener is connected to the notification system.
      * At this point, we can start receiving notifications.
@@ -94,6 +99,15 @@ class NotificationCaptureService : NotificationListenerService() {
     override fun onListenerConnected() {
         super.onListenerConnected()
         Log.i(TAG, "✓ Notification listener connected — now intercepting all notifications")
+        // Auto-cleanup: remove notifications older than 7 days
+        serviceScope.launch {
+            try {
+                repository.cleanupOldNotifications()
+                Log.i(TAG, "✓ Auto-cleanup completed — removed notifications older than 7 days")
+            } catch (e: Exception) {
+                Log.e(TAG, "Cleanup failed", e)
+            }
+        }
     }
 
     /**

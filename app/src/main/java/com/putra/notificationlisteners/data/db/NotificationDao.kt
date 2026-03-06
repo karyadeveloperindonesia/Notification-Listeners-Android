@@ -38,6 +38,13 @@ interface NotificationDao {
     suspend fun deleteAll()
 
     /**
+     * Delete notifications older than the given timestamp.
+     * Used for auto-cleanup: only keep last 7 days.
+     */
+    @Query("DELETE FROM captured_notifications WHERE timestamp < :threshold")
+    suspend fun deleteOlderThan(threshold: Long)
+
+    /**
      * Get total count of captured notifications.
      * Useful for statistics / dashboard.
      */

@@ -1,6 +1,12 @@
 package com.putra.notificationlisteners
 
 import android.app.Application
+import com.putra.notificationlisteners.data.db.AppDatabase
+import com.putra.notificationlisteners.data.repository.NotificationRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /**
  * Custom Application class for the Notification Capture app.
@@ -14,9 +20,17 @@ import android.app.Application
  */
 class NotificationApp : Application() {
 
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     override fun onCreate() {
         super.onCreate()
-        // Database is initialized lazily via AppDatabase.getInstance()
-        // No explicit initialization needed here
+        // Auto-cleanup: remove notifications older than 7 days on every app launch
+        appScope.launch {
+            try {
+                val dao = AppDatabase.getInstance(this@NotificationApp).notificationDao()
+                val repo = NotificationRepository(dao)
+                repo.cleanupOldNotifications()
+            } catch (_: Exception) { }
+        }
     }
 }

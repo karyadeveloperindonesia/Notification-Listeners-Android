@@ -4,6 +4,9 @@ import com.putra.notificationlisteners.data.db.NotificationDao
 import com.putra.notificationlisteners.data.db.NotificationEntity
 import kotlinx.coroutines.flow.Flow
 
+private const val RETENTION_DAYS = 7L
+private const val MILLIS_PER_DAY = 24 * 60 * 60 * 1000L
+
 /**
  * Repository layer that abstracts data access for the ViewModel.
  *
@@ -41,5 +44,14 @@ class NotificationRepository(private val dao: NotificationDao) {
      */
     suspend fun insert(notification: NotificationEntity) {
         dao.insert(notification)
+    }
+
+    /**
+     * Delete notifications older than 7 days.
+     * Call on app start and periodically from the service.
+     */
+    suspend fun cleanupOldNotifications() {
+        val threshold = System.currentTimeMillis() - (RETENTION_DAYS * MILLIS_PER_DAY)
+        dao.deleteOlderThan(threshold)
     }
 }
