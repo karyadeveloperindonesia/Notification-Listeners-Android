@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -43,6 +44,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -88,10 +90,13 @@ fun NotificationListScreen(
     // Expanded state per section — default all expanded
     val expandedSections = remember { mutableStateMapOf<String, Boolean>() }
 
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
     ) {
         // ── Top Bar ──────────────────────────────────────────────
         Row(
@@ -208,6 +213,7 @@ fun NotificationListScreen(
             }
         }
     }
+    } // end Surface
 
     if (showClearDialog) {
         ClearAllDialog(
@@ -324,12 +330,15 @@ private fun PermissionBanner(
 
 @Composable
 private fun StatsHeader(count: Int) {
+    val isDark = isSystemInDarkTheme()
+    val bgColor = if (isDark) Color(0xFF0D2115) else Color(0xFFE8F5E9)
+    val greenColor = if (isDark) Color(0xFFA5D6A7) else Color(0xFF2E7D32)
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+        colors = CardDefaults.cardColors(containerColor = bgColor),
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Row(
@@ -342,13 +351,13 @@ private fun StatsHeader(count: Int) {
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF2E7D32).copy(alpha = 0.15f)),
+                    .background(greenColor.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.NotificationsActive,
                     contentDescription = null,
-                    tint = Color(0xFF2E7D32),
+                    tint = greenColor,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -357,13 +366,13 @@ private fun StatsHeader(count: Int) {
                 Text(
                     text = "Listener Active",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF2E7D32).copy(alpha = 0.7f)
+                    color = greenColor.copy(alpha = 0.7f)
                 )
                 Text(
                     text = "$count notifications captured",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2E7D32)
+                    color = greenColor
                 )
             }
         }

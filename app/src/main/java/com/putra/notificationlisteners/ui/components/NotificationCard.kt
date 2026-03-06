@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.isSystemInDarkTheme
 import com.putra.notificationlisteners.data.db.NotificationEntity
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -37,7 +38,8 @@ fun NotificationCard(
     notification: NotificationEntity,
     modifier: Modifier = Modifier
 ) {
-    val (bgColor, accentColor) = getCardColors(notification.packageName)
+    val isDark = isSystemInDarkTheme()
+    val (bgColor, accentColor) = getCardColors(notification.packageName, isDark)
 
     Card(
         modifier = modifier
@@ -141,9 +143,9 @@ fun NotificationCard(
     }
 }
 
-/** Deterministic card color palette derived from the package name. */
-private fun getCardColors(packageName: String): Pair<Color, Color> {
-    val palettes = listOf(
+/** Deterministic card color palette derived from the package name, adapts to dark/light theme. */
+private fun getCardColors(packageName: String, isDark: Boolean): Pair<Color, Color> {
+    val lightPalettes = listOf(
         Pair(Color(0xFFE3F2FD), Color(0xFF1565C0)), // Blue
         Pair(Color(0xFFE8F5E9), Color(0xFF2E7D32)), // Green
         Pair(Color(0xFFFFF3E0), Color(0xFFE65100)), // Orange
@@ -155,8 +157,20 @@ private fun getCardColors(packageName: String): Pair<Color, Color> {
         Pair(Color(0xFFFCE4EC), Color(0xFF880E4F)), // Pink
         Pair(Color(0xFFF9FBE7), Color(0xFF558B2F)), // Light Green
     )
-    val index = Math.abs(packageName.hashCode()) % palettes.size
-    return palettes[index]
+    val darkPalettes = listOf(
+        Pair(Color(0xFF0D2137), Color(0xFF90CAF9)), // Blue
+        Pair(Color(0xFF0D2115), Color(0xFFA5D6A7)), // Green
+        Pair(Color(0xFF2B1A05), Color(0xFFFFCC80)), // Orange
+        Pair(Color(0xFF1E0D2E), Color(0xFFCE93D8)), // Purple
+        Pair(Color(0xFF2D0A0A), Color(0xFFEF9A9A)), // Red
+        Pair(Color(0xFF071F1C), Color(0xFF80CBC4)), // Teal
+        Pair(Color(0xFF2B2200), Color(0xFFFFE082)), // Amber
+        Pair(Color(0xFF0D1030), Color(0xFF9FA8DA)), // Indigo
+        Pair(Color(0xFF2D0A1A), Color(0xFFF48FB1)), // Pink
+        Pair(Color(0xFF141F07), Color(0xFFAED581)), // Light Green
+    )
+    val index = Math.abs(packageName.hashCode()) % lightPalettes.size
+    return if (isDark) darkPalettes[index] else lightPalettes[index]
 }
 
 private fun formatTime(timestamp: Long): String =
