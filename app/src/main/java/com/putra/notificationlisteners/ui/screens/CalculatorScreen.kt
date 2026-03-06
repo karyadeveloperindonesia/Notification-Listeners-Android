@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -83,12 +85,37 @@ fun CalculatorScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(0.40f),
+                .weight(0.40f)
+                .pointerInput(Unit) {
+                    var totalDrag = 0f
+                    var triggered = false
+                    detectHorizontalDragGestures(
+                        onDragStart = { totalDrag = 0f; triggered = false },
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            totalDrag += dragAmount
+                            // Trigger backspace once per swipe, threshold 60px rightward
+                            if (totalDrag > 60f && !triggered) {
+                                triggered = true
+                                viewModel.onBackspace()
+                            }
+                        }
+                    )
+                },
             contentAlignment = Alignment.BottomEnd
         ) {
+            // Font size based on character count — reliable, no re-layout loops
+            val fontSize = when {
+                display.length <= 6  -> 72.sp
+                display.length <= 8  -> 58.sp
+                display.length <= 10 -> 46.sp
+                display.length <= 12 -> 36.sp
+                else                 -> 28.sp
+            }
+
             Text(
                 text = display,
-                fontSize = 72.sp,
+                fontSize = fontSize,
                 fontFamily = sfProRounded,
                 fontWeight = FontWeight.Normal,
                 color = textColor,

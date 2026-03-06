@@ -121,6 +121,17 @@ class CalculatorViewModel : ViewModel() {
     }
 
     /**
+     * Delete the last character of current input (backspace).
+     * Called when user swipes right on the display.
+     */
+    fun onBackspace() {
+        if (currentInput.isNotEmpty()) {
+            currentInput = currentInput.dropLast(1)
+            updateDisplay(if (currentInput.isEmpty()) "0" else currentInput)
+        }
+    }
+
+    /**
      * Clear all and reset to "0".
      */
     fun onClear() {
