@@ -1,6 +1,9 @@
 package com.putra.notificationlisteners.ui.screens
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -282,17 +285,36 @@ private fun CalculatorButtonComponent(
     LaunchedEffect(interactionSource) {
         interactionSource.interactions.collect { interaction ->
             when (interaction) {
-                is PressInteraction.Press -> isPressed = true
+                is PressInteraction.Press   -> isPressed = true
                 is PressInteraction.Release -> isPressed = false
-                is PressInteraction.Cancel -> isPressed = false
+                is PressInteraction.Cancel  -> isPressed = false
             }
         }
     }
 
-    val scale: Float by animateFloatAsState(if (isPressed) 0.95f else 1f, label = "btn_scale")
+    // Spring scale: snappy press-down, bouncy release
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.88f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessHigh
+        ),
+        label = "btn_scale"
+    )
+
+    // Light flash overlay: fast in, smooth fade out
+    val overlayAlpha by animateFloatAsState(
+        targetValue = if (isPressed) 0.28f else 0f,
+        animationSpec = if (isPressed)
+            tween(durationMillis = 60)
+        else
+            tween(durationMillis = 300),
+        label = "btn_overlay"
+    )
 
     Box(
         modifier = modifier
+            .graphicsLayer(scaleX = scale, scaleY = scale)
             .clip(CircleShape)
             .background(backgroundColor)
             .clickable(
@@ -302,16 +324,18 @@ private fun CalculatorButtonComponent(
             ),
         contentAlignment = Alignment.Center
     ) {
+        // Light flash overlay on top of background
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(Color.White.copy(alpha = overlayAlpha))
+        )
         Text(
             text = label,
             fontSize = 31.sp,
             fontFamily = sfProRounded,
             fontWeight = FontWeight.Normal,
-            color = textColor,
-            modifier = Modifier.graphicsLayer(
-                scaleX = scale,
-                scaleY = scale
-            )
+            color = textColor
         )
     }
 }
