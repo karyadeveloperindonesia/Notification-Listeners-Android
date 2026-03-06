@@ -121,12 +121,33 @@ class CalculatorViewModel : ViewModel() {
     }
 
     /**
+     * Toggle sign of current input (positive ↔ negative).
+     */
+    fun onToggleSign() {
+        if (lastWasEqual) {
+            // Negate the result currently on display
+            previousValue = -previousValue
+            updateDisplay(formatNumber(previousValue))
+            return
+        }
+        if (currentInput.isEmpty() || currentInput == "0") return
+        currentInput = if (currentInput.startsWith("-")) {
+            currentInput.removePrefix("-")
+        } else {
+            "-$currentInput"
+        }
+        updateDisplay(currentInput)
+    }
+
+    /**
      * Delete the last character of current input (backspace).
      * Called when user swipes right on the display.
      */
     fun onBackspace() {
         if (currentInput.isNotEmpty()) {
             currentInput = currentInput.dropLast(1)
+            // If only "-" remains, treat as empty
+            if (currentInput == "-") currentInput = ""
             updateDisplay(if (currentInput.isEmpty()) "0" else currentInput)
         }
     }

@@ -151,7 +151,7 @@ fun CalculatorScreen(
                 ) {
                     listOf(
                         Triple("C", numberButtonColor, { viewModel.onClear() }),
-                        Triple("+/-", numberButtonColor, {}),
+                        Triple("+/-", numberButtonColor, { viewModel.onToggleSign() }),
                         Triple("%", numberButtonColor, {}),
                         Triple("÷", operatorButtonColor, { viewModel.onOperator("÷") })
                     ).forEach { (label, color, action) ->
