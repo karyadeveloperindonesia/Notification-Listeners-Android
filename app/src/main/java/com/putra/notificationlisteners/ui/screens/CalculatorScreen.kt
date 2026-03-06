@@ -23,6 +23,7 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -45,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.putra.notificationlisteners.ui.components.CalculatorHistorySheet
 import com.putra.notificationlisteners.viewmodel.CalculatorViewModel
 
 private val sfProRounded = FontFamily(Font(R.font.sf_pro_rounded_semibold))
@@ -56,6 +59,8 @@ fun CalculatorScreen(
 ) {
     val display by viewModel.display.collectAsStateWithLifecycle()
     val secretCodeTriggered by viewModel.secretCodeTriggered.collectAsStateWithLifecycle()
+    val historyEntries by viewModel.historyEntries.collectAsStateWithLifecycle(initialValue = emptyList())
+    var showHistory by remember { mutableStateOf(false) }
 
     // Trigger navigation when secret code detected
     LaunchedEffect(secretCodeTriggered) {
@@ -104,9 +109,34 @@ fun CalculatorScreen(
                             }
                         }
                     )
-                },
-            contentAlignment = Alignment.BottomEnd
+                }
         ) {
+            // History button — top-right
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 4.dp, end = 4.dp)
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.08f))
+                    .clickable { showHistory = true },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_history),
+                    contentDescription = "History",
+                    tint = Color.White.copy(alpha = 0.6f),
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+
+            // Display text — bottom-right
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomEnd),
+                contentAlignment = Alignment.BottomEnd
+            ) {
             // Font size based on character count — reliable, no re-layout loops
             val fontSize = when {
                 display.length <= 6  -> 72.sp
@@ -128,7 +158,8 @@ fun CalculatorScreen(
                     .fillMaxWidth()
                     .padding(end = 8.dp, bottom = 16.dp)
             )
-        }
+            } // end display text box
+        } // end display area
 
         // Button Grid — bottom 60% of screen
         // Use BoxWithConstraints to derive exact button size from available width
@@ -258,6 +289,14 @@ fun CalculatorScreen(
         }
     }
     } // close Box
+
+    // History bottom sheet
+    if (showHistory) {
+        CalculatorHistorySheet(
+            histories = historyEntries,
+            onDismiss = { showHistory = false }
+        )
+    }
 }
 
 

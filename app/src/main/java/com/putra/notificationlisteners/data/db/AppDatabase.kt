@@ -20,13 +20,14 @@ import androidx.room.RoomDatabase
  * but the app itself has full access to read/export this data.
  */
 @Database(
-    entities = [NotificationEntity::class],
-    version = 1,
+    entities = [NotificationEntity::class, CalculatorHistoryEntity::class],
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun notificationDao(): NotificationDao
+    abstract fun calculatorHistoryDao(): CalculatorHistoryDao
 
     companion object {
         @Volatile

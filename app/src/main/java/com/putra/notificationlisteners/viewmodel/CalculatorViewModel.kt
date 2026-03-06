@@ -1,8 +1,14 @@
 package com.putra.notificationlisteners.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.putra.notificationlisteners.data.db.AppDatabase
+import com.putra.notificationlisteners.data.db.CalculatorHistoryEntity
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 /**
  * ViewModel for Calculator functionality.
@@ -15,7 +21,11 @@ import kotlinx.coroutines.flow.StateFlow
  * The secret code is tracked in a hidden buffer that resets
  * every 2 seconds of inactivity, preventing unintended triggers.
  */
-class CalculatorViewModel : ViewModel() {
+class CalculatorViewModel(application: Application) : AndroidViewModel(application) {
+
+    // Database
+    private val historyDao = AppDatabase.getInstance(application).calculatorHistoryDao()
+    val historyEntries = historyDao.getAll()
 
     // UI State
     private val _display = MutableStateFlow("0")
@@ -105,18 +115,37 @@ class CalculatorViewModel : ViewModel() {
      */
     fun onEquals() {
         if (operation != null && currentInput.isNotEmpty()) {
+            val inputValue = currentInput.toDoubleOrNull() ?: 0.0
             val result = calculate(
                 previousValue,
-                currentInput.toDoubleOrNull() ?: 0.0,
+                inputValue,
                 operation!!
             )
+
+            // Build expression string for history
+            val expression = "${formatNumber(previousValue)}${operation}${formatNumber(inputValue)}"
+            val resultStr = formatNumber(result)
+
+            // Save to history (max 50 entries)
+            viewModelScope.launch(Dispatchers.IO) {
+                historyDao.insert(
+                    CalculatorHistoryEntity(
+                        expression = expression,
+                        result = resultStr
+                    )
+                )
+                // Prune if over 50
+                while (historyDao.getCount() > 50) {
+                    historyDao.deleteOldest()
+                }
+            }
 
             currentInput = ""
             previousValue = result
             operation = null
             lastWasEqual = true
 
-            updateDisplay(formatNumber(result))
+            updateDisplay(resultStr)
         }
     }
 
